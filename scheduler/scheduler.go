@@ -1,64 +1,130 @@
 package scheduler
 
 import (
+	"example.com/scheduler/common"
 	"example.com/scheduler/cronjobs"
-	httpserver "example.com/scheduler/server"
+	"example.com/scheduler/persistence"
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/kardianos/service"
-	"sync"
+	"github.com/robfig/cron/v3"
+	"log"
 )
 
-type Scheduler struct {
-	service       service.Service
-	mutex         sync.Mutex
-	Running       bool
-	Name          string
-	CronScheduler *cronjobs.CronScheduler
-	logger        service.Logger
+type SchedulerManager struct {
+	Scheduler   *cronjobs.CronScheduler
+	Persistence *persistence.PersistenceManager
+	service     service.Service
+	logger      service.Logger
 }
 
-func NewScheduler(name string) *Scheduler {
-	return &Scheduler{
-		Name:          name,
-		CronScheduler: cronjobs.New(),
+func NewSchedulerManager(scheduler *cronjobs.CronScheduler, persistence *persistence.PersistenceManager) *SchedulerManager {
+	return &SchedulerManager{
+		Scheduler:   scheduler,
+		Persistence: persistence,
 	}
 }
 
-func (s *Scheduler) SetService(srv service.Service) {
-	s.service = srv
+func (sm *SchedulerManager) AddTask(spec string, volumeName string) error {
+	fmt.Println(volumeName)
+
+	// Add task to the scheduler
+	_, err := sm.Scheduler.AddTask(spec, common.Cmd(volumeName))
+	if err != nil {
+		return err
+	}
+
+	// Record new task
+	// TODO Check pinata for existing uuid solutions.
+	task := common.TaskConfig{
+		ID:         fmt.Sprint(uuid.New()),
+		Spec:       spec,
+		VolumeName: volumeName,
+	}
+
+	tasks, err := sm.Persistence.LoadTasks()
+	if err != nil {
+		return err
+	}
+	tasks = append(tasks, task)
+
+	// Persist new task configuration
+	return sm.Persistence.SaveTasks(tasks)
 }
 
-func (s *Scheduler) SetLogger(logger service.Logger) {
-	s.logger = logger
+func (sm *SchedulerManager) RemoveTask(taskID cron.EntryID) error {
+	sm.Scheduler.RemoveTask(taskID)
+
+	// Load, filter out removed task, save updated list
+	tasks, err := sm.Persistence.LoadTasks()
+	if err != nil {
+		return err
+	}
+	filteredTasks := []common.TaskConfig{}
+	for _, task := range tasks {
+		if task.ID != fmt.Sprint(taskID) {
+			filteredTasks = append(filteredTasks, task)
+		}
+	}
+	return sm.Persistence.SaveTasks(filteredTasks)
 }
 
-func (s *Scheduler) Start(_ service.Service) error {
-	s.SetRunning(true)
-	s.logger.Infof("[%s] Scheduler started with cron jobs.\n", s.Name)
-	s.startCronJobs() // Initialize and start cron jobs
+func (sm *SchedulerManager) RunScheduler() error {
+	svcConfig := &service.Config{
+		Name:        "GoCronScheduler",
+		DisplayName: "Go Cron CronScheduler",
+		Description: "This service runs a Go-based cron scheduler.",
+	}
+
+	// Load tasks from the persistence storage
+	if err := sm.Scheduler.LoadTasks(sm.Persistence); err != nil {
+		log.Fatalf("Failed to load tasks: %v", err)
+		return err
+	}
+
+	// Create the service with the CronScheduler
+	s, err := service.New(sm, svcConfig)
+	if err != nil {
+		log.Fatal("Failed to create service:", err)
+		return err
+	}
+
+	// Attach the service to the CronScheduler for complete initialization
+	sm.SetService(s)
+
+	// Get the logger from the service
+	logger, err := s.Logger(nil)
+	if err != nil {
+		log.Fatal("Failed to create logger:", err)
+		return err
+	}
+	sm.SetLogger(logger)
+
+	// Run the service
+	if err := s.Run(); err != nil {
+		log.Println("Error:", err)
+		return err
+	}
 	return nil
 }
 
-func (s *Scheduler) Stop(_ service.Service) error {
-	s.logger.Infof("[%s] Stopping scheduler\n", s.Name)
-	s.CronScheduler.Stop()
-	httpserver.StopServer() // Stop the HTTP server gracefully
-	s.SetRunning(false)
+func (sm *SchedulerManager) SetService(srv service.Service) {
+	sm.service = srv
+}
+
+func (sm *SchedulerManager) SetLogger(logger service.Logger) {
+	sm.logger = logger
+}
+
+func (sm *SchedulerManager) Start(s service.Service) error {
+	sm.logger.Infof("Scheduler started with cron jobs.\n")
+	sm.Scheduler.Start()
+
 	return nil
 }
 
-func (s *Scheduler) startCronJobs() {
-	// Setup and start cron jobs
-	s.CronScheduler.Start()
-}
-
-func (s *Scheduler) SetRunning(state bool) {
-	s.mutex.Lock()
-	s.Running = state
-	s.mutex.Unlock()
-}
-
-func (s *Scheduler) IsRunning() bool {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	return s.Running
+func (sm *SchedulerManager) Stop(_ service.Service) error {
+	sm.logger.Infof("[%s] Stopping scheduler\n")
+	sm.service.Stop()
+	return nil
 }

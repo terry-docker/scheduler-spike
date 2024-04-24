@@ -77,7 +77,7 @@ func TestAddTaskHandlerInvalidJSON(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var data struct {
 			Spec        string `json:"Spec"`
-			Description string `json:"Description"`
+			Description string `json:"VolumeName"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -109,7 +109,7 @@ func TestAddTaskHandlerValidInput(t *testing.T) {
 	taskDescription := "Sample task"
 	mockScheduler.EXPECT().AddTask(gomock.Eq(taskSpec), gomock.Any()).Return(cron.EntryID(1), nil)
 
-	validJSON := []byte(`{"Spec":"` + taskSpec + `", "Description":"` + taskDescription + `"}`)
+	validJSON := []byte(`{"Spec":"` + taskSpec + `", "VolumeName":"` + taskDescription + `"}`)
 	req, err := http.NewRequest("POST", "/addTask", bytes.NewBuffer(validJSON))
 	if err != nil {
 		t.Fatal(err)
@@ -119,7 +119,7 @@ func TestAddTaskHandlerValidInput(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var data struct {
 			Spec        string `json:"Spec"`
-			Description string `json:"Description"`
+			Description string `json:"VolumeName"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -155,7 +155,7 @@ func TestAddTaskHandlerSchedulerFailure(t *testing.T) {
 	taskDescription := "Task with invalid spec"
 	mockScheduler.EXPECT().AddTask(gomock.Eq(taskSpec), gomock.Any()).Return(cron.EntryID(0), fmt.Errorf("invalid cron spec"))
 
-	validJSON := []byte(`{"Spec":"` + taskSpec + `", "Description":"` + taskDescription + `"}`)
+	validJSON := []byte(`{"Spec":"` + taskSpec + `", "VolumeName":"` + taskDescription + `"}`)
 	req, err := http.NewRequest("POST", "/addTask", bytes.NewBuffer(validJSON))
 	if err != nil {
 		t.Fatal(err)
@@ -165,7 +165,7 @@ func TestAddTaskHandlerSchedulerFailure(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var data struct {
 			Spec        string `json:"Spec"`
-			Description string `json:"Description"`
+			Description string `json:"VolumeName"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -225,7 +225,7 @@ func TestAddTaskHandlerInvalidCronSpec(t *testing.T) {
 			mockScheduler := mock_cronjobs.NewMockScheduler(mockCtrl)
 			mockScheduler.EXPECT().AddTask(gomock.Any(), gomock.Any()).Times(0) // Expect no call
 
-			validJSON := []byte(`{"Spec":"` + tc.cronSpec + `", "Description":"` + tc.description + `"}`)
+			validJSON := []byte(`{"Spec":"` + tc.cronSpec + `", "VolumeName":"` + tc.description + `"}`)
 			req, err := http.NewRequest("POST", "/addTask", bytes.NewBuffer(validJSON))
 			if err != nil {
 				t.Fatal(err)
@@ -235,7 +235,7 @@ func TestAddTaskHandlerInvalidCronSpec(t *testing.T) {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var data struct {
 					Spec        string `json:"Spec"`
-					Description string `json:"Description"`
+					Description string `json:"VolumeName"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 					http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -284,7 +284,7 @@ func TestAddTaskHandlerSchedulerInternalError(t *testing.T) {
 	internalErrorMessage := "Internal scheduler error"
 	mockScheduler.EXPECT().AddTask(gomock.Eq(validCronSpec), gomock.Any()).Return(cron.EntryID(0), fmt.Errorf(internalErrorMessage))
 
-	validJSON := []byte(`{"Spec":"` + validCronSpec + `", "Description":"` + taskDescription + `"}`)
+	validJSON := []byte(`{"Spec":"` + validCronSpec + `", "VolumeName":"` + taskDescription + `"}`)
 	req, err := http.NewRequest("POST", "/addTask", bytes.NewBuffer(validJSON))
 	if err != nil {
 		t.Fatal(err)
@@ -294,7 +294,7 @@ func TestAddTaskHandlerSchedulerInternalError(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var data struct {
 			Spec        string `json:"Spec"`
-			Description string `json:"Description"`
+			Description string `json:"VolumeName"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -332,11 +332,11 @@ func TestAddTaskHandlerConcurrent(t *testing.T) {
 	expectedID := cron.EntryID(1)
 	mockScheduler.EXPECT().AddTask(gomock.Eq(validCronSpec), gomock.Any()).Return(expectedID, nil).AnyTimes()
 
-	validJSON := []byte(`{"Spec":"` + validCronSpec + `", "Description":"` + taskDescription + `"}`)
+	validJSON := []byte(`{"Spec":"` + validCronSpec + `", "VolumeName":"` + taskDescription + `"}`)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var data struct {
 			Spec        string `json:"Spec"`
-			Description string `json:"Description"`
+			Description string `json:"VolumeName"`
 		}
 		json.NewDecoder(r.Body).Decode(&data)
 		_, err := mockScheduler.AddTask(data.Spec, func() {})

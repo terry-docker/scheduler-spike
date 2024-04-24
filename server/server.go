@@ -3,8 +3,7 @@ package httpserver
 import (
 	"context"
 	"encoding/json"
-	"example.com/scheduler/cronjobs"
-	"fmt"
+	"example.com/scheduler/scheduler"
 	"github.com/robfig/cron/v3"
 	"log"
 	"net/http"
@@ -13,35 +12,32 @@ import (
 
 var server *http.Server
 
-func StartServer(port string, scheduler *cronjobs.CronScheduler, isRunning func() bool) {
+func StartServer(port string, manager *scheduler.SchedulerManager) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
-		if isRunning() {
-			fmt.Fprintln(w, "Service is running")
-		} else {
-			fmt.Fprintln(w, "Service is not running")
-		}
-	})
 
 	mux.HandleFunc("/addTask", func(w http.ResponseWriter, r *http.Request) {
 		var data struct {
-			Spec        string `json:"Spec"`
-			Description string `json:"Description"`
+			Spec       string `json:"Spec"`
+			VolumeName string `json:"VolumeName"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
 
-		taskFunc := func() {
-			log.Printf("Executing task: %s", data.Description)
+		if data.VolumeName == "" {
+			http.Error(w, "Volume name not valid", http.StatusBadRequest)
+			return
 		}
 
-		if id, err := scheduler.AddTask(data.Spec, taskFunc); err != nil {
+		if err := manager.AddTask(data.Spec, data.VolumeName); err != nil {
 			http.Error(w, "Failed to add task", http.StatusInternalServerError)
-		} else {
-			json.NewEncoder(w).Encode(map[string]interface{}{"taskID": id})
+			return
 		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Task added successfully"})
+
 	})
 
 	mux.HandleFunc("/removeTask", func(w http.ResponseWriter, r *http.Request) {
@@ -53,9 +49,22 @@ func StartServer(port string, scheduler *cronjobs.CronScheduler, isRunning func(
 			return
 		}
 
-		scheduler.RemoveTask(data.TaskID)
+		if err := manager.RemoveTask(data.TaskID); err != nil {
+			http.Error(w, "Failed to remove task", http.StatusInternalServerError)
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, "Task removed successfully")
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Task removed successfully"})
+	})
+
+	mux.HandleFunc("/debug/tasks", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		manager.Scheduler.List()
 	})
 
 	server = &http.Server{

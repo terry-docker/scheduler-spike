@@ -11,31 +11,31 @@ import (
 	cron "github.com/robfig/cron/v3"
 )
 
-// MockScheduler is a mock of Scheduler interface.
-type MockScheduler struct {
+// MockCronScheduler is a mock of CronScheduler interface.
+type MockCronScheduler struct {
 	ctrl     *gomock.Controller
-	recorder *MockSchedulerMockRecorder
+	recorder *MockCronSchedulerMockRecorder
 }
 
-// MockSchedulerMockRecorder is the mock recorder for MockScheduler.
-type MockSchedulerMockRecorder struct {
-	mock *MockScheduler
+// MockCronSchedulerMockRecorder is the mock recorder for MockCronScheduler.
+type MockCronSchedulerMockRecorder struct {
+	mock *MockCronScheduler
 }
 
-// NewMockScheduler creates a new mock instance.
-func NewMockScheduler(ctrl *gomock.Controller) *MockScheduler {
-	mock := &MockScheduler{ctrl: ctrl}
-	mock.recorder = &MockSchedulerMockRecorder{mock}
+// NewMockCronScheduler creates a new mock instance.
+func NewMockCronScheduler(ctrl *gomock.Controller) *MockCronScheduler {
+	mock := &MockCronScheduler{ctrl: ctrl}
+	mock.recorder = &MockCronSchedulerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockScheduler) EXPECT() *MockSchedulerMockRecorder {
+func (m *MockCronScheduler) EXPECT() *MockCronSchedulerMockRecorder {
 	return m.recorder
 }
 
 // AddTask mocks base method.
-func (m *MockScheduler) AddTask(spec string, task func()) (cron.EntryID, error) {
+func (m *MockCronScheduler) AddTask(spec string, task func()) (cron.EntryID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddTask", spec, task)
 	ret0, _ := ret[0].(cron.EntryID)
@@ -44,13 +44,13 @@ func (m *MockScheduler) AddTask(spec string, task func()) (cron.EntryID, error) 
 }
 
 // AddTask indicates an expected call of AddTask.
-func (mr *MockSchedulerMockRecorder) AddTask(spec, task interface{}) *gomock.Call {
+func (mr *MockCronSchedulerMockRecorder) AddTask(spec, task interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTask", reflect.TypeOf((*MockScheduler)(nil).AddTask), spec, task)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTask", reflect.TypeOf((*MockCronScheduler)(nil).AddTask), spec, task)
 }
 
 // RemoveTask mocks base method.
-func (m *MockScheduler) RemoveTask(id cron.EntryID) error {
+func (m *MockCronScheduler) RemoveTask(id cron.EntryID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemoveTask", id)
 	ret0, _ := ret[0].(error)
@@ -58,31 +58,31 @@ func (m *MockScheduler) RemoveTask(id cron.EntryID) error {
 }
 
 // RemoveTask indicates an expected call of RemoveTask.
-func (mr *MockSchedulerMockRecorder) RemoveTask(id interface{}) *gomock.Call {
+func (mr *MockCronSchedulerMockRecorder) RemoveTask(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTask", reflect.TypeOf((*MockScheduler)(nil).RemoveTask), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTask", reflect.TypeOf((*MockCronScheduler)(nil).RemoveTask), id)
 }
 
 // Start mocks base method.
-func (m *MockScheduler) Start() {
+func (m *MockCronScheduler) Start() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Start")
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockSchedulerMockRecorder) Start() *gomock.Call {
+func (mr *MockCronSchedulerMockRecorder) Start() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockScheduler)(nil).Start))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockCronScheduler)(nil).Start))
 }
 
 // Stop mocks base method.
-func (m *MockScheduler) Stop() {
+func (m *MockCronScheduler) Stop() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Stop")
 }
 
 // Stop indicates an expected call of Stop.
-func (mr *MockSchedulerMockRecorder) Stop() *gomock.Call {
+func (mr *MockCronSchedulerMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockScheduler)(nil).Stop))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockCronScheduler)(nil).Stop))
 }
