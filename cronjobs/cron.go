@@ -1,11 +1,12 @@
 package cronjobs
 
 import (
+	"fmt"
+	"log"
+
 	"example.com/scheduler/common"
 	"example.com/scheduler/persistence"
-	"fmt"
 	"github.com/robfig/cron/v3"
-	"log"
 )
 
 type ICronScheduler interface {
@@ -63,7 +64,6 @@ func (cs *CronScheduler) AddTask(spec string, task func()) (cron.EntryID, error)
 	}
 
 	log.Printf("Added new task: %v with spec: %s", id, spec)
-	task()
 	return id, nil
 }
 
@@ -78,7 +78,7 @@ func (cs *CronScheduler) RemoveTask(id cron.EntryID) error {
 	return nil
 }
 
-func (cs *CronScheduler) LoadTasks(persistence *persistence.PersistenceManager) error {
+func (cs *CronScheduler) LoadTasks(persistence *persistence.Manager) error {
 	tasks, err := persistence.LoadTasks()
 	if err != nil {
 		return err

@@ -2,9 +2,10 @@ package persistence
 
 import (
 	"encoding/json"
-	"example.com/scheduler/common"
 	"os"
 	"sync"
+
+	"example.com/scheduler/common"
 )
 
 type IPersistenceManager interface {
@@ -12,18 +13,18 @@ type IPersistenceManager interface {
 	LoadTasks() ([]common.TaskConfig, error)
 }
 
-type PersistenceManager struct {
+type Manager struct {
 	mu         sync.Mutex
 	configFile string
 }
 
-var _ IPersistenceManager = (*PersistenceManager)(nil)
+var _ IPersistenceManager = (*Manager)(nil)
 
-func NewPersistenceManager(configFile string) *PersistenceManager {
-	return &PersistenceManager{configFile: configFile}
+func NewPersistenceManager(configFile string) *Manager {
+	return &Manager{configFile: configFile}
 }
 
-func (pm *PersistenceManager) SaveTasks(tasks []common.TaskConfig) error {
+func (pm *Manager) SaveTasks(tasks []common.TaskConfig) error {
 	file, err := os.Create(pm.configFile)
 	if err != nil {
 		return err
@@ -34,7 +35,7 @@ func (pm *PersistenceManager) SaveTasks(tasks []common.TaskConfig) error {
 	return encoder.Encode(tasks)
 }
 
-func (pm *PersistenceManager) LoadTasks() ([]common.TaskConfig, error) {
+func (pm *Manager) LoadTasks() ([]common.TaskConfig, error) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 

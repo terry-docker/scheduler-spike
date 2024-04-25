@@ -2,7 +2,7 @@ package common
 
 import "log"
 
-// TODO Instead of logging VolumeName we want the volume id and to export the volume.
+// TODO Is VolumeName unique? Should we be storing a volume id?
 type TaskConfig struct {
 	ID         string `json:"id"`
 	Spec       string `json:"spec"`

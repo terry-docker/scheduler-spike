@@ -3,15 +3,17 @@ package httpserver
 import (
 	"context"
 	"encoding/json"
-	"example.com/scheduler/scheduler"
-	"github.com/robfig/cron/v3"
 	"log"
 	"net/http"
 	"time"
+
+	"example.com/scheduler/scheduler"
+	"github.com/robfig/cron/v3"
 )
 
 var server *http.Server
 
+// Assuming this server mux isnt needed, I just wanted to get something working for the protoype.
 func StartServer(port string, manager *scheduler.SchedulerManager) {
 	mux := http.NewServeMux()
 

@@ -1,34 +1,38 @@
 package scheduler
 
 import (
+	"fmt"
+	"log"
+
 	"example.com/scheduler/common"
 	"example.com/scheduler/cronjobs"
 	"example.com/scheduler/persistence"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/kardianos/service"
 	"github.com/robfig/cron/v3"
-	"log"
 )
 
 type SchedulerManager struct {
 	Scheduler   *cronjobs.CronScheduler
-	Persistence *persistence.PersistenceManager
+	Persistence *persistence.Manager
 	service     service.Service
 	logger      service.Logger
+	tasks       []TaskMap
 }
 
-func NewSchedulerManager(scheduler *cronjobs.CronScheduler, persistence *persistence.PersistenceManager) *SchedulerManager {
+type TaskMap struct {
+	volumeName string
+	cronID     cron.EntryID
+}
+
+func NewSchedulerManager(scheduler *cronjobs.CronScheduler, persistence *persistence.Manager) *SchedulerManager {
 	return &SchedulerManager{
 		Scheduler:   scheduler,
 		Persistence: persistence,
 	}
 }
 
-// TODO Thursday, figure out how to lookup a volume to remove it, and add check on add to make sure you can only add one volume at a time.
 func (sm *SchedulerManager) AddTask(spec string, volumeName string) error {
-	fmt.Println(volumeName)
-
 	// Add task to the scheduler
 	_, err := sm.Scheduler.AddTask(spec, common.Cmd(volumeName))
 	if err != nil {
@@ -53,6 +57,8 @@ func (sm *SchedulerManager) AddTask(spec string, volumeName string) error {
 	return sm.Persistence.SaveTasks(tasks)
 }
 
+// TODO need to remove the task from json, was working when I was storing the cron id but I moved to a uuid and broke it.
+// We don't need to store the cron id's as it changes between runs, leaning on storing a key/value map to associate the TaskConfig with the cron id.
 func (sm *SchedulerManager) RemoveTask(taskID cron.EntryID) error {
 	sm.Scheduler.RemoveTask(taskID)
 
@@ -71,6 +77,7 @@ func (sm *SchedulerManager) RemoveTask(taskID cron.EntryID) error {
 }
 
 func (sm *SchedulerManager) RunScheduler() error {
+	// TODO update this
 	svcConfig := &service.Config{
 		Name:        "GoCronScheduler",
 		DisplayName: "Go Cron CronScheduler",
