@@ -25,6 +25,7 @@ func NewSchedulerManager(scheduler *cronjobs.CronScheduler, persistence *persist
 	}
 }
 
+// TODO Thursday, figure out how to lookup a volume to remove it, and add check on add to make sure you can only add one volume at a time.
 func (sm *SchedulerManager) AddTask(spec string, volumeName string) error {
 	fmt.Println(volumeName)
 
